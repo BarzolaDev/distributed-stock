@@ -1,0 +1,32 @@
+services:
+  inventory-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: inventory
+    ports:
+      - "5432:5432"
+
+  payment-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: payments
+    ports:
+      - "5433:5432"
+
+  inventory-service:
+    build: ./inventory-service
+    ports:
+      - "8001:8000"
+    depends_on:
+      - inventory-db
+
+  payment-service:
+    build: ./payment-service
+    ports:
+      - "8002:8000"
+    depends_on:
+      - payment-db
