@@ -40,3 +40,12 @@ def get_balance(account_id: int, db: Session = Depends(get_db)):
     if not account:
         raise HTTPException(status_code=404, detail="Account not found")
     return {"account_id": account.id, "balance": account.balance}
+
+@app.post("/accounts/{account_id}/refund")
+def refund(account_id: int, amount: int, db: Session = Depends(get_db)):
+    account = db.query(Account).filter(Account.id == account_id).first()
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+    account.balance += amount
+    db.commit()
+    return {"account_id": account_id, "remaining_balance": account.balance}

@@ -13,16 +13,22 @@ def purchase(product_id: int, account_id: int, quantity: int, amount: int):
     
     print(f"✅ Pago procesado: {payment.json()}")
     
-    # Simulamos falla del inventory service
-    raise Exception("💥 Inventory service cayó")
-    
-    # Este código nunca se ejecuta
-    stock = httpx.post(f"{INVENTORY_URL}/products/{product_id}/reserve", params={"quantity": quantity})
-    print(f"✅ Stock descontado: {stock.json()}")
+    try:
+        # Paso 2 — descontar stock
+        stock = httpx.post(f"{INVENTORY_URL}/products/{product_id}/reserve", params={"quantity": quantity})
+        
+        if stock.status_code != 200:
+            raise Exception(f"Stock falló: {stock.json()}")
+        
+        print(f"✅ Stock descontado: {stock.json()}")
+        print("🎉 Compra completada — sistema consistente")
+        
+    except Exception as e:
+        print(f"❌ {e}")
+        print("↩️ Inventory caído — revertiendo pago...")
+        refund = httpx.post(f"{PAYMENT_URL}/accounts/{account_id}/refund", params={"amount": amount})
+        print(f"✅ Pago revertido: {refund.json()}")
+        print("✅ Sistema consistente — Saga ejecutada")
 
 if __name__ == "__main__":
-    try:
-        purchase(product_id=1, account_id=1, quantity=1, amount=100)
-    except Exception as e:
-        print(f"{e}")
-        print("💀 INCONSISTENCIA — el pago se procesó pero el stock NO se descontó")
+    purchase(product_id=1, account_id=1, quantity=1, amount=100)
