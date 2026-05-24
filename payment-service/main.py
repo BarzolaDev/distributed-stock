@@ -13,7 +13,7 @@ def health():
 
 @app.post("/accounts/{account_id}/charge")
 def charge(account_id: int, amount: int, db: Session = Depends(get_db)):
-    account = db.query(Account).filter(Account.id == account_id).first()
+    account = db.query(Account).filter(Account.id == account_id).with_for_update().first()
     
     if not account:
         raise HTTPException(status_code=404, detail="Account not found")
