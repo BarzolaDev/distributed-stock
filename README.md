@@ -22,3 +22,10 @@ account = db.query(Account).filter(Account.id == account_id).with_for_update().f
 💰 Final balance: 0 (exact, never negative)
 
 Same result for inventory service. Lock works.
+
+## Idempotency
+
+Same payment request sent N times = charged only once.
+
+Key: `idempotency_key` stored in DB.
+Second request returns cached response without touching balance.
