@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from db.session import get_db, engine
 from models.account import Base, Account
+from models.idempotency import IdempotencyKey
 
 Base.metadata.create_all(bind=engine)
 
@@ -12,7 +13,17 @@ def health():
     return {"service": "payment", "status": "ok"}
 
 @app.post("/accounts/{account_id}/charge")
-def charge(account_id: int, amount: int, db: Session = Depends(get_db)):
+def charge(account_id: int, amount: int, idempotency_key: str, db: Session = Depends(get_db)):
+    
+    # Buscar si ya existe
+    existing = db.query(IdempotencyKey).filter(
+        IdempotencyKey.key == idempotency_key
+    ).first()
+    
+    if existing:
+        return existing.response
+    
+    # Procesar normal
     account = db.query(Account).filter(Account.id == account_id).with_for_update().first()
     
     if not account:
@@ -22,9 +33,14 @@ def charge(account_id: int, amount: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Insufficient balance")
     
     account.balance -= amount
+    
+    # Guardar el registro
+    response = {"account_id": account_id, "remaining_balance": account.balance}
+    record = IdempotencyKey(key=idempotency_key, response=str(response))
+    db.add(record)
     db.commit()
     
-    return {"account_id": account_id, "remaining_balance": account.balance}
+    return response
 
 @app.post("/seed")
 def seed(db: Session = Depends(get_db)):
