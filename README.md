@@ -29,3 +29,12 @@ Same payment request sent N times = charged only once.
 
 Key: `idempotency_key` stored in DB.
 Second request returns cached response without touching balance.
+
+## Saga — Distributed Consistency
+
+Payment and inventory must succeed together or not at all.
+
+If inventory fails after payment → automatic refund.
+If payment fails → inventory never touched.
+
+Two services. One consistent outcome.
