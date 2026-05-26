@@ -32,7 +32,7 @@ def test_no_negative_balance(postgres, db_engine):
     account_id = account.id
     db.close()
 
-    server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=8003, log_level="error"))
+    server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=8011, log_level="error"))
     t = threading.Thread(target=server.run)
     t.daemon = True
     t.start()
@@ -44,7 +44,7 @@ def test_no_negative_balance(postgres, db_engine):
         key = str(uuid.uuid4())
         try:
             response = requests.post(
-                f"http://127.0.0.1:8003/accounts/{account_id}/charge",
+                f"http://127.0.0.1:8011/accounts/{account_id}/charge",
                 params={"amount": 100, "idempotency_key": key}
             )
             results.append(response.status_code)

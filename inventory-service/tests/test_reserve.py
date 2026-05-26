@@ -1,3 +1,4 @@
+import uuid
 from models.product import Product
 
 def test_reserve_success(client, db_session):
@@ -22,6 +23,7 @@ def test_reserve_insufficient_stock(client, db_session):
     assert response.status_code == 400
 
 def test_reserve_product_not_found(client):
-    response = client.post("/products/99999/reserve?quantity=1&idempotency_key=key-3")
+    fake_id = uuid.uuid4()
+    response = client.post(f"/products/{fake_id}/reserve?quantity=1&idempotency_key=key-3")
     
     assert response.status_code == 404

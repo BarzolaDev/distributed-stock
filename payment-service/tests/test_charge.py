@@ -1,3 +1,4 @@
+import uuid
 from models.account import Account
 
 def test_charge_success(client, db_session):
@@ -22,7 +23,8 @@ def test_charge_insufficient_balance(client, db_session):
     assert response.status_code == 400
 
 def test_charge_account_not_found(client):
-    response = client.post("/accounts/99999/charge?amount=100&idempotency_key=key-3")
+    fake_id = uuid.uuid4()
+    response = client.post(f"/accounts/{fake_id}/charge?amount=100&idempotency_key=key-3")
     
     assert response.status_code == 404
 

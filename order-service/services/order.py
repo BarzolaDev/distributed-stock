@@ -1,5 +1,6 @@
 import httpx
 from sqlalchemy.orm import Session
+from uuid import UUID
 from models.order import Order
 from domain.exceptions import PaymentFailedError, InventoryFailedError
 import os
@@ -7,10 +8,10 @@ import os
 PAYMENT_SERVICE_URL = os.getenv("PAYMENT_SERVICE_URL", "http://payment-service:8000")
 INVENTORY_SERVICE_URL = os.getenv("INVENTORY_SERVICE_URL", "http://inventory-service:8000")
 
-def create_order(account_id: int, product_id: int, quantity: int, amount: int, idempotency_key: str, db: Session) -> dict:
+def create_order(account_id: UUID, product_id: UUID, quantity: int, amount: int, idempotency_key: str, db: Session) -> dict:
     existing = db.query(Order).filter(Order.idempotency_key == idempotency_key).first()
     if existing:
-        return {"order_id": existing.id, "account_id": existing.account_id, "product_id": existing.product_id, "quantity": existing.quantity, "amount": existing.amount, "status": existing.status}
+        return {"order_id": str(existing.id), "account_id": str(existing.account_id), "product_id": str(existing.product_id), "quantity": existing.quantity, "amount": existing.amount, "status": existing.status}
 
     payment_response = httpx.post(
         f"{PAYMENT_SERVICE_URL}/accounts/{account_id}/charge",
@@ -44,4 +45,4 @@ def create_order(account_id: int, product_id: int, quantity: int, amount: int, i
     db.commit()
     db.refresh(order)
 
-    return {"order_id": order.id, "account_id": account_id, "product_id": product_id, "quantity": quantity, "amount": amount, "status": "confirmed"}
+    return {"order_id": str(order.id), "account_id": str(account_id), "product_id": str(product_id), "quantity": quantity, "amount": amount, "status": "confirmed"}

@@ -1,6 +1,9 @@
 import pytest
-import httpx
+import uuid
 from unittest.mock import patch, MagicMock
+
+ACCOUNT_ID = uuid.uuid4()
+PRODUCT_ID = uuid.uuid4()
 
 def mock_payment_success(url, **kwargs):
     response = MagicMock()
@@ -19,13 +22,13 @@ def mock_inventory_failure(url, **kwargs):
 
 def test_create_order_success(client):
     with patch("httpx.post", side_effect=[mock_payment_success(""), mock_inventory_success("")]):
-        response = client.post("/orders?account_id=1&product_id=1&quantity=2&amount=200&idempotency_key=order-1")
+        response = client.post(f"/orders?account_id={ACCOUNT_ID}&product_id={PRODUCT_ID}&quantity=2&amount=200&idempotency_key=order-1")
         assert response.status_code == 200
         assert response.json()["status"] == "confirmed"
 
 def test_create_order_payment_fails(client):
     with patch("httpx.post", return_value=mock_inventory_failure("")):
-        response = client.post("/orders?account_id=1&product_id=1&quantity=2&amount=200&idempotency_key=order-2")
+        response = client.post(f"/orders?account_id={ACCOUNT_ID}&product_id={PRODUCT_ID}&quantity=2&amount=200&idempotency_key=order-2")
         assert response.status_code == 400
 
 def test_create_order_inventory_fails_refund_triggered(client):
@@ -43,15 +46,15 @@ def test_create_order_inventory_fails_refund_triggered(client):
         return response
 
     with patch("httpx.post", side_effect=mock_calls):
-        response = client.post("/orders?account_id=1&product_id=1&quantity=2&amount=200&idempotency_key=order-3")
+        response = client.post(f"/orders?account_id={ACCOUNT_ID}&product_id={PRODUCT_ID}&quantity=2&amount=200&idempotency_key=order-3")
         assert response.status_code == 400
         assert len(refund_called) == 1
 
 def test_idempotency(client):
     with patch("httpx.post", side_effect=[mock_payment_success(""), mock_inventory_success("")]):
-        client.post("/orders?account_id=1&product_id=1&quantity=2&amount=200&idempotency_key=order-4")
+        client.post(f"/orders?account_id={ACCOUNT_ID}&product_id={PRODUCT_ID}&quantity=2&amount=200&idempotency_key=order-4")
     
     with patch("httpx.post") as mock:
-        response = client.post("/orders?account_id=1&product_id=1&quantity=2&amount=200&idempotency_key=order-4")
+        response = client.post(f"/orders?account_id={ACCOUNT_ID}&product_id={PRODUCT_ID}&quantity=2&amount=200&idempotency_key=order-4")
         assert response.status_code == 200
         mock.assert_not_called()

@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
+from uuid import UUID
 from db.session import get_db
 from models.product import Product
 from routes.product import router
@@ -9,6 +10,7 @@ from contextlib import asynccontextmanager
 async def lifespan(app):
     from db.session import get_engine
     from models.product import Base
+    from models.idempotency import IdempotencyKey
     Base.metadata.create_all(bind=get_engine())
     yield
 
@@ -26,11 +28,11 @@ def seed(db: Session = Depends(get_db)):
     db.add(product)
     db.commit()
     db.refresh(product)
-    return {"product_id": product.id, "stock": product.stock}
+    return {"product_id": str(product.id), "stock": product.stock}
 
 @app.get("/products/{product_id}/stock")
-def get_stock(product_id: int, db: Session = Depends(get_db)):
+def get_stock(product_id: UUID, db: Session = Depends(get_db)):
     product = db.query(Product).filter(Product.id == product_id).first()
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
-    return {"product_id": product.id, "stock": product.stock}
+    return {"product_id": str(product.id), "stock": product.stock}

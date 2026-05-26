@@ -32,7 +32,7 @@ def test_no_negative_stock(postgres, db_engine):
     product_id = product.id
     db.close()
 
-    server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=8001, log_level="error"))
+    server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=8010, log_level="error"))
     t = threading.Thread(target=server.run)
     t.daemon = True
     t.start()
@@ -43,7 +43,7 @@ def test_no_negative_stock(postgres, db_engine):
     def reserve():
         key = str(uuid.uuid4())
         try:
-            response = requests.post(f"http://127.0.0.1:8001/products/{product_id}/reserve?quantity=1&idempotency_key={key}")
+            response = requests.post(f"http://127.0.0.1:8010/products/{product_id}/reserve?quantity=1&idempotency_key={key}")
             results.append(response.status_code)
         except Exception as e:
             results.append(0)

@@ -1,4 +1,6 @@
+import uuid
 from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.sql import func
 
@@ -8,9 +10,9 @@ class Base(DeclarativeBase):
 class Order(Base):
     __tablename__ = "orders"
     
-    id = Column(Integer, primary_key=True)
-    account_id = Column(Integer, nullable=False)
-    product_id = Column(Integer, nullable=False)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    account_id = Column(UUID(as_uuid=True), nullable=False)
+    product_id = Column(UUID(as_uuid=True), nullable=False)
     quantity = Column(Integer, nullable=False)
     amount = Column(Integer, nullable=False)
     status = Column(String, nullable=False, default="confirmed")

@@ -6,7 +6,6 @@ PAYMENT = "http://localhost:8002"
 INVENTORY = "http://localhost:8001"
 
 def test_full_order_flow():
-    # Seed
     product = requests.post(f"{INVENTORY}/seed").json()
     account = requests.post(f"{PAYMENT}/seed").json()
     
@@ -14,7 +13,6 @@ def test_full_order_flow():
     account_id = account["account_id"]
     key = str(uuid.uuid4())
 
-    # Crear orden
     response = requests.post(f"{BASE}/orders", params={
         "account_id": account_id,
         "product_id": product_id,
@@ -26,7 +24,6 @@ def test_full_order_flow():
     assert response.status_code == 200
     assert response.json()["status"] == "confirmed"
 
-    # Verificar balance y stock
     balance = requests.get(f"{PAYMENT}/accounts/{account_id}/balance").json()
     stock = requests.get(f"{INVENTORY}/products/{product_id}/stock").json()
 
@@ -36,12 +33,12 @@ def test_full_order_flow():
 def test_saga_compensation():
     account = requests.post(f"{PAYMENT}/seed").json()
     account_id = account["account_id"]
+    fake_product_id = str(uuid.uuid4())
     key = str(uuid.uuid4())
 
-    # Producto inexistente — inventory falla → refund automático
     response = requests.post(f"{BASE}/orders", params={
         "account_id": account_id,
-        "product_id": 99999,
+        "product_id": fake_product_id,
         "quantity": 2,
         "amount": 200,
         "idempotency_key": key
@@ -49,7 +46,6 @@ def test_saga_compensation():
 
     assert response.status_code == 400
 
-    # Balance debe estar intacto
     balance = requests.get(f"{PAYMENT}/accounts/{account_id}/balance").json()
     assert balance["balance"] == 1000
 
@@ -61,7 +57,6 @@ def test_idempotency():
     account_id = account["account_id"]
     key = str(uuid.uuid4())
 
-    # Misma orden dos veces
     requests.post(f"{BASE}/orders", params={
         "account_id": account_id,
         "product_id": product_id,
@@ -78,6 +73,5 @@ def test_idempotency():
         "idempotency_key": key
     })
 
-    # Balance descontado solo una vez
     balance = requests.get(f"{PAYMENT}/accounts/{account_id}/balance").json()
     assert balance["balance"] == 800
