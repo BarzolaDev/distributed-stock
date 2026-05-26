@@ -101,5 +101,5 @@ Testcontainers · Pytest · GitHub Actions
 ## Pending
 
 - Rate limiting — request volume per client
-- UUID migration — numeric IDs are enumerable
+
 - Nginx — DDoS protection
