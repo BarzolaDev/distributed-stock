@@ -76,12 +76,17 @@ Same result for inventory service.
 
 ## Testing
 
-Each service has:
-- Contract tests — full HTTP flow per endpoint
-- Concurrency tests — real PostgreSQL via Testcontainers, not mocks
+### Unit & Contract
+Each service has contract tests — full HTTP flow per endpoint.
 
+### Concurrency
+Real PostgreSQL via Testcontainers, not mocks.
 SQLite does not support SELECT FOR UPDATE.
 Concurrency tests run against real PostgreSQL to validate locking behavior.
+
+### Integration
+End-to-end flow across all 3 services.
+docker-compose spun up and torn down automatically by the test suite.
 
 ---
 
@@ -95,7 +100,6 @@ Testcontainers · Pytest · GitHub Actions
 
 ## Pending
 
-- Integration tests — automated end-to-end flow across all 3 services
 - Rate limiting — request volume per client
 - UUID migration — numeric IDs are enumerable
 - Nginx — DDoS protection
