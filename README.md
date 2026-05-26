@@ -59,6 +59,14 @@ If payment fails → inventory never touched.
 Chosen over 2PC because Two-Phase Commit blocks all services while waiting for confirmation.
 Under high concurrency that kills throughput. Saga compensates on failure without blocking.
 
+### Circuit Breaker
+If inventory or payment service fails repeatedly, order-service stops calling it immediately.
+
+After 3 consecutive failures → circuit opens → requests fail fast without waiting for timeout.
+After 30 seconds → circuit half-opens → one request tests if service recovered.
+
+Chosen because under high load, waiting for timeouts from a dead service cascades failures across the system.
+
 ---
 
 ## Proof
