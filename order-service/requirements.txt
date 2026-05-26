@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+httpx
+python-dotenv
+pytest
+testcontainers[postgres]
+sqlalchemy
+psycopg2-binary

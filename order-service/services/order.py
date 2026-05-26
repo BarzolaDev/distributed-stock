@@ -1,0 +1,47 @@
+import httpx
+from sqlalchemy.orm import Session
+from models.order import Order
+from domain.exceptions import PaymentFailedError, InventoryFailedError
+import os
+
+PAYMENT_SERVICE_URL = os.getenv("PAYMENT_SERVICE_URL", "http://payment-service:8000")
+INVENTORY_SERVICE_URL = os.getenv("INVENTORY_SERVICE_URL", "http://inventory-service:8000")
+
+def create_order(account_id: int, product_id: int, quantity: int, amount: int, idempotency_key: str, db: Session) -> dict:
+    existing = db.query(Order).filter(Order.idempotency_key == idempotency_key).first()
+    if existing:
+        return {"order_id": existing.id, "account_id": existing.account_id, "product_id": existing.product_id, "quantity": existing.quantity, "amount": existing.amount, "status": existing.status}
+
+    payment_response = httpx.post(
+        f"{PAYMENT_SERVICE_URL}/accounts/{account_id}/charge",
+        params={"amount": amount, "idempotency_key": idempotency_key}
+    )
+    
+    if payment_response.status_code != 200:
+        raise PaymentFailedError("Payment failed")
+
+    inventory_response = httpx.post(
+        f"{INVENTORY_SERVICE_URL}/products/{product_id}/reserve",
+        params={"quantity": quantity, "idempotency_key": idempotency_key}
+    )
+    
+    if inventory_response.status_code != 200:
+        httpx.post(
+            f"{PAYMENT_SERVICE_URL}/accounts/{account_id}/refund",
+            params={"amount": amount}
+        )
+        raise InventoryFailedError("Inventory reservation failed, payment refunded")
+
+    order = Order(
+        account_id=account_id,
+        product_id=product_id,
+        quantity=quantity,
+        amount=amount,
+        status="confirmed",
+        idempotency_key=idempotency_key
+    )
+    db.add(order)
+    db.commit()
+    db.refresh(order)
+
+    return {"order_id": order.id, "account_id": account_id, "product_id": product_id, "quantity": quantity, "amount": amount, "status": "confirmed"}

@@ -1,30 +1,24 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
-from db.session import get_db, engine
-from models.product import Base, Product
+from db.session import get_db
+from models.product import Product
+from routes.product import router
+from contextlib import asynccontextmanager
 
-Base.metadata.create_all(bind=engine)
+@asynccontextmanager
+async def lifespan(app):
+    from db.session import get_engine
+    from models.product import Base
+    Base.metadata.create_all(bind=get_engine())
+    yield
 
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
+
+app.include_router(router)
 
 @app.get("/health")
 def health():
     return {"service": "inventory", "status": "ok"}
-
-@app.post("/products/{product_id}/reserve")
-def reserve_stock(product_id: int, quantity: int, db: Session = Depends(get_db)):
-    product = db.query(Product).filter(Product.id == product_id).with_for_update().first()
-    
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
-    
-    if product.stock < quantity:
-        raise HTTPException(status_code=400, detail="Insufficient stock")
-    
-    product.stock -= quantity
-    db.commit()
-    
-    return {"product_id": product_id, "remaining_stock": product.stock}
 
 @app.post("/seed")
 def seed(db: Session = Depends(get_db)):
