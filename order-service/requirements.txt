@@ -6,3 +6,4 @@ pytest
 testcontainers[postgres]
 sqlalchemy
 psycopg2-binary
+redis
