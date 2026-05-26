@@ -98,7 +98,9 @@ Testcontainers · Pytest · GitHub Actions
 
 ---
 
-## Pending
+## Known Limitations
 
-- Rate limiting — request volume per client
+- HTTPS not configured — requires a domain and certificate (Let's Encrypt)
+- CORS set to * — should be restricted to specific domains in production
+- No distributed tracing — requests cannot be traced across services
 
