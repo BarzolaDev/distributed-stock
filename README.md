@@ -102,4 +102,3 @@ Testcontainers · Pytest · GitHub Actions
 
 - Rate limiting — request volume per client
 
-- Nginx — DDoS protection
