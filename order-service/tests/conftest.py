@@ -1,4 +1,5 @@
 import pytest
+from unittest.mock import MagicMock, patch
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -29,8 +30,16 @@ def db_session(db_engine):
 
 @pytest.fixture
 def client(db_session):
+    mock_redis = MagicMock()
+    mock_redis.incr.return_value = 1
+    mock_redis.expire.return_value = True
+
     def override_get_db():
         yield db_session
+
     app.dependency_overrides[get_db] = override_get_db
-    yield TestClient(app)
+
+    with patch("middleware.rate_limiter.r", mock_redis):
+        yield TestClient(app)
+
     app.dependency_overrides.clear()
