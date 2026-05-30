@@ -62,10 +62,13 @@ Chosen because under high load, waiting for timeouts from a dead service cascade
 ### Distributed Tracing
 Every request is traced across all three services using OpenTelemetry + Jaeger.
 Latency per service, span breakdown, and failure points are visible in real time.
+
+```
 order-service: POST /orders — 125ms total
 ├── order-service (6 spans)
 ├── payment-service (3 spans)
 └── inventory-service (3 spans)
+```
 
 ---
 
