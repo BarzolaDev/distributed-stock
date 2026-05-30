@@ -7,3 +7,8 @@ testcontainers[postgres]
 sqlalchemy
 psycopg2-binary
 redis
+opentelemetry-api
+opentelemetry-sdk
+opentelemetry-instrumentation-fastapi
+opentelemetry-instrumentation-httpx
+opentelemetry-exporter-otlp-proto-grpc

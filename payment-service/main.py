@@ -5,6 +5,7 @@ from db.session import get_db
 from models.account import Account
 from routes.payment import router
 from contextlib import asynccontextmanager
+from services.telemetry import setup_telemetry
 
 @asynccontextmanager
 async def lifespan(app):
@@ -15,6 +16,8 @@ async def lifespan(app):
     yield
 
 app = FastAPI(lifespan=lifespan)
+
+setup_telemetry(app)
 
 app.include_router(router)
 

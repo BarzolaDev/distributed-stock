@@ -1,13 +1,10 @@
 # distributed-stock
-
 A distributed payment system built to handle race conditions, duplicate requests, and distributed consistency.
-
 Not a tutorial project. Built by breaking things intentionally and fixing them with proof.
 
 ---
 
 ## The Problem
-
 Most systems fail under concurrency, not under normal load.
 Request 1 reads stock → 1
 Request 2 reads stock → 1  ← before Request 1 writes
@@ -19,11 +16,8 @@ This repo demonstrates the failure, implements the fix, and proves it works unde
 ---
 
 ## Architecture
-client → order-service → payment-service
-→ inventory-service
-
+client → order-service → payment-service → inventory-service
 Three independent services. One consistent outcome.
-
 Each service has its own database. No shared state.
 
 ---
@@ -33,7 +27,6 @@ Each service has its own database. No shared state.
 ### SELECT FOR UPDATE
 Pessimistic lock at the database level.
 Concurrent requests cannot read stale values before mutation.
-
 Chosen over optimistic locking because concurrent payments need guaranteed consistency, not retries.
 
 ```python
@@ -52,7 +45,6 @@ Both are necessary.
 
 ### Saga
 Payment and inventory must succeed together or not at all.
-
 If inventory fails after payment → automatic refund.
 If payment fails → inventory never touched.
 
@@ -61,16 +53,22 @@ Under high concurrency that kills throughput. Saga compensates on failure withou
 
 ### Circuit Breaker
 If inventory or payment service fails repeatedly, order-service stops calling it immediately.
-
 After 3 consecutive failures → circuit opens → requests fail fast without waiting for timeout.
 After 30 seconds → circuit half-opens → one request tests if service recovered.
 
 Chosen because under high load, waiting for timeouts from a dead service cascades failures across the system.
 
+### Distributed Tracing
+Every request is traced across all three services using OpenTelemetry + Jaeger.
+Latency per service, span breakdown, and failure points are visible in real time.
+order-service: POST /orders — 125ms total
+├── order-service (6 spans)
+├── payment-service (3 spans)
+└── inventory-service (3 spans)
+
 ---
 
 ## Proof
-
 Tested with RaceHunter — a concurrent load testing tool built in Go for this project.
 
 20 concurrent requests, balance 1000, charge 100:
@@ -99,16 +97,13 @@ docker-compose spun up and torn down automatically by the test suite.
 ---
 
 ## Stack
-
-Python · FastAPI · PostgreSQL · SQLAlchemy · Docker  
-Go · RaceHunter  
+Python · FastAPI · PostgreSQL · SQLAlchemy · Docker
+Go · RaceHunter
+OpenTelemetry · Jaeger
 Testcontainers · Pytest · GitHub Actions
 
 ---
 
 ## Known Limitations
-
 - HTTPS not configured — requires a domain and certificate (Let's Encrypt)
 - CORS set to * — should be restricted to specific domains in production
-- No distributed tracing — requests cannot be traced across services
-

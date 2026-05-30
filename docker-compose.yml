@@ -11,7 +11,6 @@ services:
       test: ["CMD-SHELL", "pg_isready -U user -d inventory"]
       interval: 5s
       retries: 5
-
   payment-db:
     image: postgres:16-alpine
     environment:
@@ -24,7 +23,6 @@ services:
       test: ["CMD-SHELL", "pg_isready -U user -d payments"]
       interval: 5s
       retries: 5
-
   order-db:
     image: postgres:16-alpine
     environment:
@@ -37,7 +35,6 @@ services:
       test: ["CMD-SHELL", "pg_isready -U user -d orders"]
       interval: 5s
       retries: 5
-
   redis:
     image: redis:7-alpine
     ports:
@@ -46,7 +43,13 @@ services:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       retries: 5
-
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    ports:
+      - "16686:16686"
+      - "4317:4317"
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
   inventory-service:
     build: ./inventory-service
     ports:
@@ -54,9 +57,12 @@ services:
     depends_on:
       inventory-db:
         condition: service_healthy
+      jaeger:
+        condition: service_started
     environment:
       DATABASE_URL: postgresql://user:password@inventory-db:5432/inventory
-
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+      OTEL_SERVICE_NAME: inventory-service
   payment-service:
     build: ./payment-service
     ports:
@@ -64,9 +70,12 @@ services:
     depends_on:
       payment-db:
         condition: service_healthy
+      jaeger:
+        condition: service_started
     environment:
       DATABASE_URL: postgresql://user:password@payment-db:5432/payments
-
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+      OTEL_SERVICE_NAME: payment-service
   order-service:
     build: ./order-service
     ports:
@@ -80,12 +89,15 @@ services:
         condition: service_started
       inventory-service:
         condition: service_started
+      jaeger:
+        condition: service_started
     environment:
       DATABASE_URL: postgresql://user:password@order-db:5432/orders
       PAYMENT_SERVICE_URL: http://payment-service:8000
       INVENTORY_SERVICE_URL: http://inventory-service:8000
       REDIS_URL: redis://redis:6379
-
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+      OTEL_SERVICE_NAME: order-service
   nginx:
     image: nginx:alpine
     ports:
