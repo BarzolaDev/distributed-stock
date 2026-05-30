@@ -17,6 +17,7 @@ This repo demonstrates the failure, implements the fix, and proves it works unde
 
 ## Architecture
 client → order-service → payment-service → inventory-service
+
 Three independent services. One consistent outcome.
 Each service has its own database. No shared state.
 
